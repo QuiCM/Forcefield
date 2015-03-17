@@ -1,18 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Forcefield
+﻿namespace Forcefield
 {
 	public class ForceFieldUser
 	{
-		public bool enabled { get; set; }
+		public bool Enabled { get; set; }
 		public FFType Type { get; set; }
 		public ForceFieldUser()
 		{
-			enabled = false;
+			Enabled = false;
 			Type = FFType.None;
 		}
 	}
@@ -20,7 +14,7 @@ namespace Forcefield
 	public enum FFType
 	{
 		None = 0,
-		kill = 1,
-		push = 2
+		Kill = 1,
+		Push = 2
 	}
 }

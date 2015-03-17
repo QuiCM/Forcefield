@@ -1,7 +1,0 @@
-C:\Users\WYF\Documents\GitHub\Forcefield\Forcefield\obj\Debug\Forcefield.csprojResolveAssemblyReference.cache
-C:\Users\WYF\Documents\GitHub\Forcefield\Forcefield\bin\Debug\Forcefield.dll
-C:\Users\WYF\Documents\GitHub\Forcefield\Forcefield\bin\Debug\Forcefield.pdb
-C:\Users\WYF\Documents\GitHub\Forcefield\Forcefield\bin\Debug\TerrariaServer.exe
-C:\Users\WYF\Documents\GitHub\Forcefield\Forcefield\bin\Debug\TShockAPI.dll
-C:\Users\WYF\Documents\GitHub\Forcefield\Forcefield\obj\Debug\Forcefield.dll
-C:\Users\WYF\Documents\GitHub\Forcefield\Forcefield\obj\Debug\Forcefield.pdb
