@@ -45,6 +45,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions\NPCExtensions.cs" />
+    <Compile Include="NPCPush.cs" />
+    <Compile Include="Extensions\TSPlayerExtensions.cs" />
+    <Compile Include="ForceFieldUser.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
