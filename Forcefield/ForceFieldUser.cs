@@ -6,23 +6,29 @@ namespace Forcefield
 	{
 		public bool Enabled { get; set; }
 		public FFType Type { get; set; }
-		public int RecoveryAmt { get; set; }
-		public DateTime LastRecovered { get; set; }
+		public int HealthRecoveryAmt { get; set; }
+		public int ManaRecoveryAmt { get; set; }
+		public DateTime LastHealthRecovered { get; set; }
+		public DateTime LastManaRecovered { get; set; }
+
 		public ForceFieldUser()
 		{
 			Enabled = false;
 			Type = FFType.None;
-			RecoveryAmt = 0;
-			DateTime LastRecovered = DateTime.MinValue;
+			HealthRecoveryAmt = 0;
+			ManaRecoveryAmt = 0;
+			LastHealthRecovered = DateTime.MinValue;
+			LastManaRecovered = DateTime.MinValue;
 		}
 	}
 
+	[Flags]
 	public enum FFType
 	{
 		None = 0,
 		Kill = 1,
 		Push = 2,
-		Heal = 3,
-		Mana = 4
+		Heal = 4,
+		Mana = 8
 	}
 }
