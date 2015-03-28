@@ -63,17 +63,26 @@ namespace Forcefield
 						     !n.friendly &&
 						     !n.townNPC &&
 						     n.life != 0 &&
-						     Vector2.Distance(pos, n.position) < 125*((int) type) &&
-						     (DateTime.Now - n.GetForceFieldInfo().LastPush).TotalSeconds >= 0.5);
+						     Vector2.Distance(pos, n.position) < 125*((int) type));
+				var PlrList = TShock.Players.Where(
+					p => p != null &&
+						p.Active &&
+						p.Team == ply.Team &&
+						p.Team != 0 &&
+						Vector2.Distance(pos, p.TPlayer.position) < 250); //250 because Wight says 3x is too big for his *****
 
-				foreach (var npc in NpcList)
+				
+				switch (type)
 				{
-					switch (type)
-					{
-						case FFType.Kill:
-							TSPlayer.Server.StrikeNPC(npc.whoAmI, npc.lifeMax + (npc.defense*2) + 200, 0, 0);
-							return;
-						case FFType.Push:
+					case FFType.Kill:
+						foreach (var npc in NpcList)
+						{
+							TSPlayer.Server.StrikeNPC(npc.whoAmI, npc.lifeMax + (npc.defense * 2) + 200, 0, 0);
+						}
+						return;
+					case FFType.Push:
+						foreach (var npc in NpcList)
+						{
 							int xDirection = 1;
 							int yDirection = 1;
 							if (npc.position.X < ply.TPlayer.position.X)
@@ -92,23 +101,42 @@ namespace Forcefield
 							float force;
 							if (npc.velocity.X > npc.velocity.Y)
 							{
-								force = npc.velocity.X/15f;
+								force = npc.velocity.X / 15f;
 								npc.velocity.X = 25;
 								npc.velocity.Y *= force;
 							}
 							else
 							{
-								force = npc.velocity.Y/15f;
+								force = npc.velocity.Y / 15f;
 								npc.velocity.X *= force;
 								npc.velocity.Y = 25;
 							}
 							npc.velocity.X *= xDirection;
-							npc.velocity.Y *= yDirection;
-							npc.GetForceFieldInfo().LastPush = DateTime.Now;
-							return;
-						default:
-							return;
-					}
+						}
+						return;
+					case FFType.Heal:
+						if ((DateTime.Now - ply.GetForceFieldUser().LastRecovered).TotalSeconds >= 1)
+						{
+							foreach (var plr in PlrList)
+							{
+								plr.Heal(ply.GetForceFieldUser().RecoveryAmt);
+							}
+							ply.GetForceFieldUser().LastRecovered = DateTime.Now;
+						}
+						return;
+					case FFType.Mana:
+						if ((DateTime.Now - ply.GetForceFieldUser().LastRecovered).TotalSeconds >= 1)
+						{
+							foreach (var plr in PlrList)
+							{
+								plr.TPlayer.statMana += ply.GetForceFieldUser().RecoveryAmt;
+								plr.SendData(PacketTypes.PlayerMana, "", plr.Index);
+							}
+							ply.GetForceFieldUser().LastRecovered = DateTime.Now;
+						}
+						return;
+					default:
+						return;
 				}
 			}
 		}
@@ -131,11 +159,17 @@ namespace Forcefield
 			FFType type;
 			if (!Enum.TryParse(args.Parameters[0].ToLower(), true, out type))
 			{
-				args.Player.SendErrorMessage("Error: {0} is an invalid type, please use - push, kill", args.Parameters[0]);
+				args.Player.SendErrorMessage("Error: {0} is an invalid type, please use - push, kill, heal, mana", args.Parameters[0]);
 				return;
 			}
 
-			if (args.Parameters.Count == 2)
+			int amount = 5;
+			if (args.Parameters.Count > 1 && int.TryParse(args.Parameters.Last(), out amount))
+			{
+				args.Parameters.RemoveAt(args.Parameters.Count - 1);
+			}
+
+			if (args.Parameters.Count >= 2)
 			{
 				var plStr = string.Join(" ", args.Parameters.Skip(1));
 				var players = TShock.Utils.FindPlayer(plStr);
@@ -154,6 +188,7 @@ namespace Forcefield
 					ffplayer = player.GetForceFieldUser();
 					ffplayer.Enabled = !ffplayer.Enabled;
 					ffplayer.Type = type;
+					ffplayer.RecoveryAmt = amount;
 					args.Player.SendSuccessMessage("{0} is {1} protected by a forcefield",
 						player.Name, ffplayer.Enabled ? "now" : "no longer");
 
@@ -166,6 +201,7 @@ namespace Forcefield
 			ffplayer = args.Player.GetForceFieldUser();
 			ffplayer.Enabled = !ffplayer.Enabled;
 			ffplayer.Type = type;
+			ffplayer.RecoveryAmt = amount;
 			args.Player.SendSuccessMessage("You are {0} protected by a forcefield.",
 				ffplayer.Enabled ? "now" : "no longer");
 		}
