@@ -26,7 +26,11 @@ namespace Forcefield.Forcefields
 					continue;
 				}
 
-				player.TPlayer.velocity *= info.SpeedFactor;
+				player.TPlayer.velocity.X += info.SpeedFactor;
+				if (player.TPlayer.velocity.Y > 0)
+				{
+					player.TPlayer.velocity.Y += info.SpeedFactor;
+				}
 				TSPlayer.All.SendData(PacketTypes.PlayerUpdate, "", player.Index);
 			}
 		}
