@@ -84,7 +84,7 @@ namespace Forcefield
 			FFType type;
 			if (!Enum.TryParse(args.Parameters[0], true, out type))
 			{
-				args.Player.SendErrorMessage("Error: {0} is an invalid type, please use push, kill, heal, mana or none.",
+				args.Player.SendErrorMessage("Error: {0} is an invalid type, please use push, kill, heal, mana, speed or none.",
 					args.Parameters[0]);
 				return;
 			}
