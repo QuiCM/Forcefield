@@ -16,6 +16,7 @@ namespace Forcefield
 			_forcefields.Add(new Manafield());
 			_forcefields.Add(new Killfield());
 			_forcefields.Add(new Pushfield());
+			_forcefields.Add(new Speedfield());
 		}
 
 		public void Update()

@@ -122,7 +122,7 @@ namespace Forcefield
 						player.SendSuccessMessage("{0} has deactivated your forcefield.", args.Player.Name);
 						return;
 					}
-					
+
 					if (ffplayer.Type.HasFlag(type))
 					{
 						//remove the flag
@@ -137,12 +137,14 @@ namespace Forcefield
 						args.Player.SendSuccessMessage("You have removed {0}'s {1} forcefield.",
 							player.Name,
 							type == FFType.Kill
-							? "killing"
-							: type == FFType.Heal
-								? "healing"
-								: type == FFType.Mana
-									? "mana restoring"
-									: "pushing");
+								? "killing"
+								: type == FFType.Heal
+									? "healing"
+									: type == FFType.Mana
+										? "mana restoring"
+										: type == FFType.Speed
+											? "speedy"
+											: "pushing");
 
 						player.SendSuccessMessage("{0} has removed your {1} forcefield.",
 							args.Player.Name,
@@ -152,7 +154,9 @@ namespace Forcefield
 									? "healing"
 									: type == FFType.Mana
 										? "mana restoring"
-										: "pushing");
+										: type == FFType.Speed
+											? "speedy"
+											: "pushing");
 					}
 					else
 					{
@@ -168,16 +172,22 @@ namespace Forcefield
 						{
 							ffplayer.ManaRecoveryAmt = amount;
 						}
+						else if (type == FFType.Speed)
+						{
+							ffplayer.SpeedFactor = amount;
+						}
 
 						args.Player.SendSuccessMessage("You have given {0} a {1} forcefield.",
 							player.Name,
 							type == FFType.Kill
-							? "killing"
-							: type == FFType.Heal
-								? "healing"
-								: type == FFType.Mana
-									? "mana restoring"
-									: "pushing");
+								? "killing"
+								: type == FFType.Heal
+									? "healing"
+									: type == FFType.Mana
+										? "mana restoring"
+										: type == FFType.Speed
+											? "speedy"
+											: "pushing");
 
 						player.SendSuccessMessage("{0} has given you a {1} forcefield.",
 							args.Player.Name,
@@ -187,7 +197,9 @@ namespace Forcefield
 									? "healing"
 									: type == FFType.Mana
 										? "mana restoring"
-										: "pushing");
+										: type == FFType.Speed
+											? "speedy"
+											: "pushing");
 					}
 
 					ffplayer.HealthRecoveryAmt = amount;
@@ -223,7 +235,9 @@ namespace Forcefield
 							? "healing"
 							: type == FFType.Mana
 								? "mana restoring"
-								: "pushing");
+								: type == FFType.Speed
+									? "speedy"
+									: "pushing");
 			}
 			else
 			{
@@ -238,6 +252,10 @@ namespace Forcefield
 				{
 					ffplayer.ManaRecoveryAmt = amount;
 				}
+				else if (type == FFType.Speed)
+				{
+					ffplayer.SpeedFactor = amount;
+				}
 
 				args.Player.SendSuccessMessage("You have activated a {0} forcefield.",
 					type == FFType.Kill
@@ -246,7 +264,9 @@ namespace Forcefield
 							? "healing"
 							: type == FFType.Mana
 								? "mana restoring"
-								: "pushing");
+								: type == FFType.Speed
+									? "speedy"
+									: "pushing");
 			}
 		}
 
