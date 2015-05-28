@@ -48,7 +48,6 @@
   <ItemGroup>
     <Compile Include="Extensions\TSPlayerExtensions.cs" />
     <Compile Include="FieldContainer.cs" />
-    <Compile Include="Forcefields\Speedfield.cs" />
     <Compile Include="ForceFieldUser.cs" />
     <Compile Include="Forcefields\Healfield.cs" />
     <Compile Include="Forcefields\IForcefield.cs" />

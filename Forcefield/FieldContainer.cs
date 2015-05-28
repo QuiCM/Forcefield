@@ -16,13 +16,12 @@ namespace Forcefield
 			_forcefields.Add(new Manafield());
 			_forcefields.Add(new Killfield());
 			_forcefields.Add(new Pushfield());
-			_forcefields.Add(new Speedfield());
 		}
 
 		public void Update()
 		{
 			var playerList = TShock.Players.Where(p => p != null && p.IsLoggedIn && p.GetForceFieldUser().Enabled).ToList();
-			
+
 			foreach (var player in playerList)
 			{
 				player.SetBuff(116, 300, true);
