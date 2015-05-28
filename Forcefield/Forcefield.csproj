@@ -47,9 +47,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Extensions\TSPlayerExtensions.cs" />
+    <Compile Include="FieldContainer.cs" />
     <Compile Include="ForceFieldUser.cs" />
+    <Compile Include="Forcefields\Healfield.cs" />
+    <Compile Include="Forcefields\IForcefield.cs" />
+    <Compile Include="Forcefields\Killfield.cs" />
+    <Compile Include="Forcefields\Manafield.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Forcefields\Pushfield.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

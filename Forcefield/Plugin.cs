@@ -10,11 +10,13 @@ using Forcefield.Extensions;
 namespace Forcefield
 {
 	[ApiVersion(1, 17)]
-    public class Plugin : TerrariaPlugin
+	public class Plugin : TerrariaPlugin
 	{
+		private FieldContainer _forcefields;
+
 		public override string Author
 		{
-			get { return "White, IcyPhoenix"; }
+			get { return "White, IcyPhoenix, AmoKa"; }
 		}
 
 		public override string Description
@@ -44,101 +46,17 @@ namespace Forcefield
 
 		private void OnGameInitialize(EventArgs args)
 		{
-			Commands.ChatCommands.Add(new Command("forcefield.use", Forcefield, "forcefield", "ff"));
+			Commands.ChatCommands.Add(new Command("forcefield.use", Forcefield, "forcefield", "ff")
+			{
+				HelpText = string.Format("Syntax: {0}ff [type] <target> <restore>", TShock.Config.CommandSpecifier)
+			});
+
+			_forcefields = new FieldContainer();
 		}
 
 		private void OnGameUpdate(EventArgs args)
 		{
-			var PlayerList = TShock.Players.Where(p => p != null && p.IsLoggedIn && p.GetForceFieldUser().Enabled);
-			foreach (var ply in PlayerList)
-			{
-				//Sets inferno buff for 5 seconds
-				ply.SetBuff(116, 300, true);
-				var pos = ply.TPlayer.position;
-				var type = ply.GetForceFieldUser().Type;
-				var NpcList =
-					Main.npc.Where(
-						n => n != null &&
-						     n.active &&
-						     !n.friendly &&
-						     !n.townNPC &&
-						     n.life != 0 &&
-						     Vector2.Distance(pos, n.position) < 125*((int) type));
-				var PlrList = TShock.Players.Where(
-					p => p != null &&
-						p.Active &&
-						p.Team == ply.Team &&
-						p.Team != 0 &&
-						Vector2.Distance(pos, p.TPlayer.position) < 250); //250 because Wight says 3x is too big for his *****
-
-				
-				switch (type)
-				{
-					case FFType.Kill:
-						foreach (var npc in NpcList)
-						{
-							TSPlayer.Server.StrikeNPC(npc.whoAmI, npc.lifeMax + (npc.defense * 2) + 200, 0, 0);
-						}
-						return;
-					case FFType.Push:
-						foreach (var npc in NpcList)
-						{
-							int xDirection = 1;
-							int yDirection = 1;
-							if (npc.position.X < ply.TPlayer.position.X)
-							{
-								xDirection = -1;
-							}
-							if (npc.position.Y < ply.TPlayer.position.Y)
-							{
-								yDirection = -1;
-							}
-							if (npc.velocity == Vector2.Zero)
-							{
-								npc.velocity.X = 3;
-								npc.velocity.Y = 3;
-							}
-							float force;
-							if (npc.velocity.X > npc.velocity.Y)
-							{
-								force = npc.velocity.X / 15f;
-								npc.velocity.X = 25;
-								npc.velocity.Y *= force;
-							}
-							else
-							{
-								force = npc.velocity.Y / 15f;
-								npc.velocity.X *= force;
-								npc.velocity.Y = 25;
-							}
-							npc.velocity.X *= xDirection;
-						}
-						return;
-					case FFType.Heal:
-						if ((DateTime.Now - ply.GetForceFieldUser().LastRecovered).TotalSeconds >= 1)
-						{
-							foreach (var plr in PlrList)
-							{
-								plr.Heal(ply.GetForceFieldUser().RecoveryAmt);
-							}
-							ply.GetForceFieldUser().LastRecovered = DateTime.Now;
-						}
-						return;
-					case FFType.Mana:
-						if ((DateTime.Now - ply.GetForceFieldUser().LastRecovered).TotalSeconds >= 1)
-						{
-							foreach (var plr in PlrList)
-							{
-								plr.TPlayer.statMana += ply.GetForceFieldUser().RecoveryAmt;
-								plr.SendData(PacketTypes.PlayerMana, "", plr.Index);
-							}
-							ply.GetForceFieldUser().LastRecovered = DateTime.Now;
-						}
-						return;
-					default:
-						return;
-				}
-			}
+			_forcefields.Update();
 		}
 
 		/// <summary>
@@ -152,18 +70,26 @@ namespace Forcefield
 
 			if (args.Parameters.Count < 1)
 			{
+				if (args.Player.GetForceFieldUser().Enabled)
+				{
+					args.Player.GetForceFieldUser().Type = FFType.None;
+					args.Player.GetForceFieldUser().Enabled = false;
+					args.Player.SendWarningMessage("Forcefield disabled.");
+					return;
+				}
 				args.Player.SendInfoMessage("Usage: forcefield <type> [target]");
 				return;
 			}
 
 			FFType type;
-			if (!Enum.TryParse(args.Parameters[0].ToLower(), true, out type))
+			if (!Enum.TryParse(args.Parameters[0], true, out type))
 			{
-				args.Player.SendErrorMessage("Error: {0} is an invalid type, please use - push, kill, heal, mana", args.Parameters[0]);
+				args.Player.SendErrorMessage("Error: {0} is an invalid type, please use push, kill, heal, mana, speed or none.",
+					args.Parameters[0]);
 				return;
 			}
 
-			int amount = 5;
+			var amount = 5;
 			if (args.Parameters.Count > 1 && int.TryParse(args.Parameters.Last(), out amount))
 			{
 				args.Parameters.RemoveAt(args.Parameters.Count - 1);
@@ -186,24 +112,162 @@ namespace Forcefield
 				{
 					var player = players[0];
 					ffplayer = player.GetForceFieldUser();
-					ffplayer.Enabled = !ffplayer.Enabled;
-					ffplayer.Type = type;
-					ffplayer.RecoveryAmt = amount;
-					args.Player.SendSuccessMessage("{0} is {1} protected by a forcefield",
-						player.Name, ffplayer.Enabled ? "now" : "no longer");
 
-					player.SendSuccessMessage("{0} {1}tivated your forcefield",
-						player.Name, ffplayer.Enabled ? "ac" : "deac");
+					if (type == FFType.None)
+					{
+						ffplayer.Type = FFType.None;
+						ffplayer.Enabled = false;
+
+						args.Player.SendSuccessMessage("{0}'s forcefield has been deactivated.", player.Name);
+						player.SendSuccessMessage("{0} has deactivated your forcefield.", args.Player.Name);
+						return;
+					}
+
+					if (ffplayer.Type.HasFlag(type))
+					{
+						//remove the flag
+						ffplayer.Type &= ~type;
+
+						//All flags except none have been removed
+						if (ffplayer.Type == FFType.None)
+						{
+							ffplayer.Enabled = false;
+						}
+
+						args.Player.SendSuccessMessage("You have removed {0}'s {1} forcefield.",
+							player.Name,
+							type == FFType.Kill
+								? "killing"
+								: type == FFType.Heal
+									? "healing"
+									: type == FFType.Mana
+										? "mana restoring"
+										: type == FFType.Speed
+											? "speedy"
+											: "pushing");
+
+						player.SendSuccessMessage("{0} has removed your {1} forcefield.",
+							args.Player.Name,
+							type == FFType.Kill
+								? "killing"
+								: type == FFType.Heal
+									? "healing"
+									: type == FFType.Mana
+										? "mana restoring"
+										: type == FFType.Speed
+											? "speedy"
+											: "pushing");
+					}
+					else
+					{
+						//add the flag
+						ffplayer.Type |= type;
+						ffplayer.Enabled = true;
+
+						if (type == FFType.Heal)
+						{
+							ffplayer.HealthRecoveryAmt = amount;
+						}
+						else if (type == FFType.Mana)
+						{
+							ffplayer.ManaRecoveryAmt = amount;
+						}
+						else if (type == FFType.Speed)
+						{
+							ffplayer.SpeedFactor = amount;
+						}
+
+						args.Player.SendSuccessMessage("You have given {0} a {1} forcefield.",
+							player.Name,
+							type == FFType.Kill
+								? "killing"
+								: type == FFType.Heal
+									? "healing"
+									: type == FFType.Mana
+										? "mana restoring"
+										: type == FFType.Speed
+											? "speedy"
+											: "pushing");
+
+						player.SendSuccessMessage("{0} has given you a {1} forcefield.",
+							args.Player.Name,
+							type == FFType.Kill
+								? "killing"
+								: type == FFType.Heal
+									? "healing"
+									: type == FFType.Mana
+										? "mana restoring"
+										: type == FFType.Speed
+											? "speedy"
+											: "pushing");
+					}
+
+					ffplayer.HealthRecoveryAmt = amount;
 				}
+
 				return;
 			}
 
 			ffplayer = args.Player.GetForceFieldUser();
-			ffplayer.Enabled = !ffplayer.Enabled;
-			ffplayer.Type = type;
-			ffplayer.RecoveryAmt = amount;
-			args.Player.SendSuccessMessage("You are {0} protected by a forcefield.",
-				ffplayer.Enabled ? "now" : "no longer");
+
+			if (type == FFType.None)
+			{
+				ffplayer.Type = FFType.None;
+				ffplayer.Enabled = false;
+
+				args.Player.SendSuccessMessage("Your forcefield has been deactivated.");
+				return;
+			}
+			
+			if (ffplayer.Type.HasFlag(type))
+			{
+				ffplayer.Type &= ~type;
+
+				if (ffplayer.Type == FFType.None)
+				{
+					ffplayer.Enabled = false;
+				}
+
+				args.Player.SendSuccessMessage("You have removed your {0} forcefield.",
+					type == FFType.Kill
+						? "killing"
+						: type == FFType.Heal
+							? "healing"
+							: type == FFType.Mana
+								? "mana restoring"
+								: type == FFType.Speed
+									? "speedy"
+									: "pushing");
+			}
+			else
+			{
+				ffplayer.Type |= type;
+				ffplayer.Enabled = true;
+
+				if (type == FFType.Heal)
+				{
+					ffplayer.HealthRecoveryAmt = amount;
+				}
+				else if (type == FFType.Mana)
+				{
+					ffplayer.ManaRecoveryAmt = amount;
+				}
+				else if (type == FFType.Speed)
+				{
+					ffplayer.SpeedFactor = amount;
+				}
+
+				args.Player.SendSuccessMessage("You have activated a {0} forcefield.",
+					type == FFType.Kill
+						? "killing"
+						: type == FFType.Heal
+							? "healing"
+							: type == FFType.Mana
+								? "mana restoring"
+								: type == FFType.Speed
+									? "speedy"
+									: "pushing");
+			}
 		}
 
 		protected override void Dispose(bool disposing)
@@ -215,5 +279,5 @@ namespace Forcefield
 			}
 			base.Dispose(disposing);
 		}
-    }
+	}
 }

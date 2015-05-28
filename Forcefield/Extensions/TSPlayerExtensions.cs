@@ -5,11 +5,11 @@ namespace Forcefield.Extensions
 {
 	public static class TSPlayerExtensions
 	{
-		private static ConditionalWeakTable<TSPlayer, ForceFieldUser> players = new ConditionalWeakTable<TSPlayer, ForceFieldUser>();
+		private static readonly ConditionalWeakTable<TSPlayer, ForceFieldUser> Players = new ConditionalWeakTable<TSPlayer, ForceFieldUser>();
 
 		internal static ForceFieldUser GetForceFieldUser(this TSPlayer tsplayer)
 		{
-			return players.GetValue(tsplayer, ah => new ForceFieldUser());
+			return Players.GetOrCreateValue(tsplayer);
 		}
 	}
 }
