@@ -32,7 +32,7 @@ namespace Forcefield
 
 		public string GetValidFields
 		{
-			get { return "none, " + String.Join(", ", _forcefields.Select(f => f.Key)); }
+			get { return "none, " + String.Join(", ", _forcefields.Select(f => f.Key.ToLower())); }
 		}
 
 		public void Update()
