@@ -8,9 +8,14 @@ namespace Forcefield.Forcefields
 {
 	public class Healfield : IForcefield
 	{
-		public FFType Type
+		public string Name
 		{
-			get { return FFType.Heal; }
+			get { return "HEAL"; }
+		}
+
+		public string Description
+		{
+			get { return "healing"; }
 		}
 
 		public float Radius
@@ -18,12 +23,45 @@ namespace Forcefield.Forcefields
 			get { return 250f; }
 		}
 
+		public void Create(ForceFieldUser player, List<string> args)
+		{
+			if (!player.HasProperty("LastHealthRecovered"))
+			{
+				player.SetProperty("LastHealthRecovered", DateTime.UtcNow);
+			}
+			if (!player.HasProperty("HealthRecoveryAmount"))
+			{
+				player.SetProperty("HealthRecoveryAmount", 10);
+			}
+			if (!player.HasProperty("TimeBetweenHeals"))
+			{
+				player.SetProperty("TimeBetweenHeals", 5);
+			}
+
+			if (args.Count > 0)
+			{
+				int recover;
+				if (Int32.TryParse(args[0], out recover))
+				{
+					player.SetProperty("HealthRecoveryAmount", recover);
+				}
+			}
+			if (args.Count > 1)
+			{
+				int timeBetweenHeals;
+				if (Int32.TryParse(args[1], out timeBetweenHeals))
+				{
+					player.SetProperty("TimeBetweenHeals", timeBetweenHeals);
+				}
+			}
+		}
+
 		public void Update(IEnumerable<TSPlayer> shieldedPlayers)
 		{
 			foreach (var player in shieldedPlayers)
 			{
-				var info = player.GetForceFieldUser();
-				if (!info.Type.HasFlag(Type))
+				ForceFieldUser user = player.GetForceFieldUser();
+				if (!user.HasField(this))
 				{
 					continue;
 				}
@@ -37,13 +75,13 @@ namespace Forcefield.Forcefields
 					     p.Team != 0 &&
 					     Vector2.Distance(pos, p.TPlayer.position) < 250);
 
-				if ((DateTime.UtcNow - info.LastHealthRecovered).TotalSeconds >= 1)
+				if ((DateTime.UtcNow - (DateTime)user["LastHealthRecovered"]).TotalSeconds >= (int)user["TimeBetweenHeals"])
 				{
 					foreach (var plr in plrList)
 					{
-						plr.Heal(info.HealthRecoveryAmt);
+						plr.Heal((int)user["HealthRecoveryAmount"]);
 					}
-					player.GetForceFieldUser().LastHealthRecovered = DateTime.UtcNow;
+					user["LastHealthRecovered"] = DateTime.UtcNow;
 				}
 			}
 		}

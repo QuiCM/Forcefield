@@ -2,15 +2,21 @@
 using System.Collections.Generic;
 using System.Linq;
 using Forcefield.Extensions;
+using Terraria;
 using TShockAPI;
 
 namespace Forcefield.Forcefields
 {
 	public class Manafield : IForcefield
 	{
-		public FFType Type
+		public string Name
 		{
-			get { return FFType.Mana; }
+			get { return "MANA"; }
+		}
+
+		public string Description
+		{
+			get { return "mana restoring"; }
 		}
 
 		public float Radius
@@ -18,12 +24,33 @@ namespace Forcefield.Forcefields
 			get { return 250f; }
 		}
 
+		public void Create(ForceFieldUser player, List<string> args)
+		{
+			if (!player.HasProperty("LastManaRecovered"))
+			{
+				player.SetProperty("LastManaRecovered", DateTime.UtcNow);
+			}
+			if (!player.HasProperty("ManaRecoveryAmount"))
+			{
+				player.SetProperty("ManaRecoveryAmount", 10);
+			}
+
+			if (args.Count > 0)
+			{
+				int recover;
+				if (Int32.TryParse(args[0], out recover))
+				{
+					player.SetProperty("HealthRecoveryAmount", recover);
+				}
+			}
+		}
+
 		public void Update(IEnumerable<TSPlayer> shieldedPlayers)
 		{
 			foreach (var player in shieldedPlayers)
 			{
-				var info = player.GetForceFieldUser();
-				if (!info.Type.HasFlag(Type))
+				ForceFieldUser user = player.GetForceFieldUser();
+				if (!user.HasField(this))
 				{
 					continue;
 				}
@@ -37,15 +64,20 @@ namespace Forcefield.Forcefields
 					     p.Team != 0 &&
 					     Vector2.Distance(pos, p.TPlayer.position) < 250);
 
-				if ((DateTime.UtcNow - info.LastManaRecovered).TotalSeconds >= 1)
+				if ((DateTime.UtcNow - (DateTime)user["LastManaRecovered"]).TotalSeconds >= 1)
 				{
 					foreach (var plr in plrList)
 					{
-						var restore = Math.Min(info.ManaRecoveryAmt, plr.TPlayer.statManaMax2 - plr.TPlayer.statMana);
-						plr.TPlayer.statMana += restore;
-						plr.SendData(PacketTypes.PlayerMana, "", plr.Index);
+						var restore = Math.Min((int)user["ManaRecoveryAmount"],
+							plr.TPlayer.statManaMax2 - plr.TPlayer.statMana);
+						if (Main.ServerSideCharacter)
+						{
+							plr.TPlayer.statMana += restore;
+							plr.SendData(PacketTypes.PlayerMana, "", plr.Index);
+							plr.SendData(PacketTypes.EffectMana, "", plr.Index, restore);
+						}
 					}
-					player.GetForceFieldUser().LastManaRecovered = DateTime.UtcNow;
+					user["LastManaRecovered"] = DateTime.UtcNow;
 				}
 			}
 		}

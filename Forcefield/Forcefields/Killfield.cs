@@ -8,9 +8,14 @@ namespace Forcefield.Forcefields
 {
 	internal class Killfield : IForcefield
 	{
-		public FFType Type
+		public string Name
 		{
-			get { return FFType.Kill; }
+			get { return "KILL"; }
+		}
+
+		public string Description
+		{
+			get { return "killing"; }
 		}
 
 		public float Radius
@@ -18,12 +23,16 @@ namespace Forcefield.Forcefields
 			get { return 150f; }
 		}
 
+		public void Create(ForceFieldUser player, List<string> args)
+		{
+		}
+
 		public void Update(IEnumerable<TSPlayer> shieldedPlayers)
 		{
 			foreach (var player in shieldedPlayers)
 			{
-				var info = player.GetForceFieldUser();
-				if (!info.Type.HasFlag(Type))
+				ForceFieldUser user = player.GetForceFieldUser();
+				if (!user.HasField(this))
 				{
 					continue;
 				}

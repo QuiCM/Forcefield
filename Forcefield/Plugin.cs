@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Terraria;
@@ -6,10 +7,11 @@ using TerrariaApi.Server;
 using TShockAPI;
 
 using Forcefield.Extensions;
+using Forcefield.Forcefields;
 
 namespace Forcefield
 {
-	[ApiVersion(1, 17)]
+	[ApiVersion(1, 19)]
 	public class Plugin : TerrariaPlugin
 	{
 		private FieldContainer _forcefields;
@@ -48,7 +50,7 @@ namespace Forcefield
 		{
 			Commands.ChatCommands.Add(new Command("forcefield.use", Forcefield, "forcefield", "ff")
 			{
-				HelpText = string.Format("Syntax: {0}ff [type] <target> <restore>", TShock.Config.CommandSpecifier)
+				HelpText = string.Format("Syntax: {0}ff [type] <target> <-p parameters>", TShock.Config.CommandSpecifier)
 			});
 
 			_forcefields = new FieldContainer();
@@ -70,10 +72,11 @@ namespace Forcefield
 
 			if (args.Parameters.Count < 1)
 			{
-				if (args.Player.GetForceFieldUser().Enabled)
+				ffplayer = args.Player.GetForceFieldUser();
+				if (ffplayer.Enabled)
 				{
-					args.Player.GetForceFieldUser().Type = FFType.None;
-					args.Player.GetForceFieldUser().Enabled = false;
+					ffplayer.ClearFields();
+					ffplayer.Enabled = false;
 					args.Player.SendWarningMessage("Forcefield disabled.");
 					return;
 				}
@@ -81,23 +84,25 @@ namespace Forcefield
 				return;
 			}
 
-			FFType type;
-			if (!Enum.TryParse(args.Parameters[0], true, out type))
+			IForcefield field;
+			if (!_forcefields.TryParse(args.Parameters[0], out field))
 			{
-				args.Player.SendErrorMessage("Error: {0} is an invalid type, please use push, kill, heal, mana, speed or none.",
-					args.Parameters[0]);
+				args.Player.SendErrorMessage("Error: {0} is an invalid type", args.Parameters[0]);
+				args.Player.SendErrorMessage("Valid types: {0}", _forcefields.GetValidFields);
 				return;
 			}
 
-			var amount = 5;
-			if (args.Parameters.Count > 1 && int.TryParse(args.Parameters.Last(), out amount))
-			{
-				args.Parameters.RemoveAt(args.Parameters.Count - 1);
-			}
+			int index = args.Parameters.IndexOf("-p");
 
-			if (args.Parameters.Count >= 2)
+			if (args.Parameters.Count >= 2 && (index == -1 || index > 1))
 			{
-				var plStr = string.Join(" ", args.Parameters.Skip(1));
+				//ff <type> <name> <?params>
+
+				//Grabs all parameters between type and -p
+				//eg /ff heal multi part name -p 50
+				//this variable will be 'multi part name'
+				var plStr = String.Join(" ", args.Parameters.Skip(1).TakeWhile(s => s != "-p"));
+
 				var players = TShock.Utils.FindPlayer(plStr);
 
 				if (players.Count > 1)
@@ -110,12 +115,12 @@ namespace Forcefield
 				}
 				else
 				{
-					var player = players[0];
+					TSPlayer player = players[0];
 					ffplayer = player.GetForceFieldUser();
 
-					if (type == FFType.None)
+					if (field == null)
 					{
-						ffplayer.Type = FFType.None;
+						ffplayer.ClearFields();
 						ffplayer.Enabled = false;
 
 						args.Player.SendSuccessMessage("{0}'s forcefield has been deactivated.", player.Name);
@@ -123,151 +128,174 @@ namespace Forcefield
 						return;
 					}
 
-					if (ffplayer.Type.HasFlag(type))
+					if (ffplayer.HasField(field))
 					{
-						//remove the flag
-						ffplayer.Type &= ~type;
+						//remove the field
+						ffplayer.RemoveField(field);
 
-						//All flags except none have been removed
-						if (ffplayer.Type == FFType.None)
+						//All field except none have been removed
+						if (ffplayer.FieldCount == 0)
 						{
 							ffplayer.Enabled = false;
 						}
 
 						args.Player.SendSuccessMessage("You have removed {0}'s {1} forcefield.",
-							player.Name,
-							type == FFType.Kill
-								? "killing"
-								: type == FFType.Heal
-									? "healing"
-									: type == FFType.Mana
-										? "mana restoring"
-										: type == FFType.Speed
-											? "speedy"
-											: "pushing");
+							player.Name, field.Description);
 
 						player.SendSuccessMessage("{0} has removed your {1} forcefield.",
-							args.Player.Name,
-							type == FFType.Kill
-								? "killing"
-								: type == FFType.Heal
-									? "healing"
-									: type == FFType.Mana
-										? "mana restoring"
-										: type == FFType.Speed
-											? "speedy"
-											: "pushing");
+							args.Player.Name, field.Description);
 					}
 					else
 					{
-						//add the flag
-						ffplayer.Type |= type;
+						//Provides field initialization for the player with all parameters after -p
+						//eg /ff heal player -p 50
+						//the List<string> sent to the method will be { "50" }
+						field.Create(ffplayer, args.Parameters.Skip(index + 1).ToList());
+
+						//add the field
+						ffplayer.AddField(field);
 						ffplayer.Enabled = true;
 
-						if (type == FFType.Heal)
-						{
-							ffplayer.HealthRecoveryAmt = amount;
-						}
-						else if (type == FFType.Mana)
-						{
-							ffplayer.ManaRecoveryAmt = amount;
-						}
-						else if (type == FFType.Speed)
-						{
-							ffplayer.SpeedFactor = amount;
-						}
+						string aOrAn = AOrAn(field.Description);
+						args.Player.SendSuccessMessage("You have given {0} {1} {2} forcefield.",
+							player.Name, aOrAn, field.Description);
 
-						args.Player.SendSuccessMessage("You have given {0} a {1} forcefield.",
-							player.Name,
-							type == FFType.Kill
-								? "killing"
-								: type == FFType.Heal
-									? "healing"
-									: type == FFType.Mana
-										? "mana restoring"
-										: type == FFType.Speed
-											? "speedy"
-											: "pushing");
+						player.SendSuccessMessage("{0} has given you {1} {2} forcefield.",
+							args.Player.Name, aOrAn, field.Description);
+					}
+				}
+			}
+			else if (args.Parameters.Count >= 2 && index == 1)
+			{
+				//ff type -p params
 
-						player.SendSuccessMessage("{0} has given you a {1} forcefield.",
-							args.Player.Name,
-							type == FFType.Kill
-								? "killing"
-								: type == FFType.Heal
-									? "healing"
-									: type == FFType.Mana
-										? "mana restoring"
-										: type == FFType.Speed
-											? "speedy"
-											: "pushing");
+				if (!args.Player.RealPlayer)
+				{
+					args.Player.SendErrorMessage("You can only add forcefields to in-game players.");
+					return;
+				}
+
+				ffplayer = args.Player.GetForceFieldUser();
+
+				if (field == null)
+				{
+					ffplayer.ClearFields();
+					ffplayer.Enabled = false;
+
+					args.Player.SendSuccessMessage("Your forcefield has been deactivated.");
+					return;
+				}
+
+				if (ffplayer.HasField(field))
+				{
+					//remove the field
+					ffplayer.RemoveField(field);
+
+					//All field except none have been removed
+					if (ffplayer.FieldCount == 0)
+					{
+						ffplayer.Enabled = false;
 					}
 
-					ffplayer.HealthRecoveryAmt = amount;
+					args.Player.SendSuccessMessage("You have removed your {0} forcefield.", field.Description);
+				}
+				else
+				{
+					//Provides field initialization for the player with all parameters after -p
+					//eg /ff heal player -p 50
+					//the List<string> sent to the method will be { "50" }
+					field.Create(ffplayer, args.Parameters.Skip(index + 1).ToList());
+
+					//add the field
+					ffplayer.AddField(field);
+					ffplayer.Enabled = true;
+
+					args.Player.SendSuccessMessage("You have activated {0} {1} forcefield.",
+						AOrAn(field.Description), field.Description);
+				}
+			}
+			else if (args.Parameters.Count < 2)
+			{
+				if (!args.Player.RealPlayer)
+				{
+					args.Player.SendErrorMessage("You can only add forcefields to in-game players.");
+					return;
 				}
 
-				return;
-			}
+				ffplayer = args.Player.GetForceFieldUser();
 
-			ffplayer = args.Player.GetForceFieldUser();
-
-			if (type == FFType.None)
-			{
-				ffplayer.Type = FFType.None;
-				ffplayer.Enabled = false;
-
-				args.Player.SendSuccessMessage("Your forcefield has been deactivated.");
-				return;
-			}
-			
-			if (ffplayer.Type.HasFlag(type))
-			{
-				ffplayer.Type &= ~type;
-
-				if (ffplayer.Type == FFType.None)
+				if (field == null)
 				{
+					ffplayer.ClearFields();
 					ffplayer.Enabled = false;
+
+					args.Player.SendSuccessMessage("Your forcefield has been deactivated.");
+					return;
 				}
 
-				args.Player.SendSuccessMessage("You have removed your {0} forcefield.",
-					type == FFType.Kill
-						? "killing"
-						: type == FFType.Heal
-							? "healing"
-							: type == FFType.Mana
-								? "mana restoring"
-								: type == FFType.Speed
-									? "speedy"
-									: "pushing");
+				if (ffplayer.HasField(field))
+				{
+					//remove the field
+					ffplayer.RemoveField(field);
+
+					//All field except none have been removed
+					if (ffplayer.FieldCount == 0)
+					{
+						ffplayer.Enabled = false;
+					}
+
+					args.Player.SendSuccessMessage("You have removed your {0} forcefield.", field.Description);
+				}
+				else
+				{
+					//Provides field initialization for the player with all parameters after -p
+					//eg /ff heal player -p 50
+					//the List<string> sent to the method will be { "50" }
+					field.Create(ffplayer, new List<string>());
+
+					//add the field
+					ffplayer.AddField(field);
+					ffplayer.Enabled = true;
+
+					args.Player.SendSuccessMessage("You have activated {0} {1} forcefield.",
+						AOrAn(field.Description), field.Description);
+				}
 			}
-			else
+		}
+
+		private string AOrAn(string following, bool isStart = false)
+		{
+			char[] vowels =
 			{
-				ffplayer.Type |= type;
-				ffplayer.Enabled = true;
+				'a',
+				'e',
+				'i',
+				'o',
+				'u'
+			};
 
-				if (type == FFType.Heal)
+			if (String.IsNullOrEmpty(following))
+			{
+				if (isStart)
 				{
-					ffplayer.HealthRecoveryAmt = amount;
+					return "A";
 				}
-				else if (type == FFType.Mana)
-				{
-					ffplayer.ManaRecoveryAmt = amount;
-				}
-				else if (type == FFType.Speed)
-				{
-					ffplayer.SpeedFactor = amount;
-				}
-
-				args.Player.SendSuccessMessage("You have activated a {0} forcefield.",
-					type == FFType.Kill
-						? "killing"
-						: type == FFType.Heal
-							? "healing"
-							: type == FFType.Mana
-								? "mana restoring"
-								: type == FFType.Speed
-									? "speedy"
-									: "pushing");
+				return "a";
 			}
+
+			if (vowels.Any(v => following[0] == v))
+			{
+				if (isStart)
+				{
+					return "An";
+				}
+				return "an";
+			}
+			if (isStart)
+			{
+				return "A";
+			}
+			return "a";
 		}
 
 		protected override void Dispose(bool disposing)
