@@ -8,9 +8,15 @@ namespace Forcefield.Forcefields
 {
 	public class Pushfield : IForcefield
 	{
-		public FFType Type
+
+		public string Name
 		{
-			get { return FFType.Push; }
+			get { return "PUSH"; }
+		}
+
+		public string Description
+		{
+			get { return "pushing"; }
 		}
 
 		public float Radius
@@ -18,12 +24,16 @@ namespace Forcefield.Forcefields
 			get { return 250f; }
 		}
 
+		public void Create(ForceFieldUser player, List<string> args)
+		{
+		}
+
 		public void Update(IEnumerable<TSPlayer> shieldedPlayers)
 		{
 			foreach (var player in shieldedPlayers)
 			{
-				var info = player.GetForceFieldUser();
-				if (!info.Type.HasFlag(Type))
+				ForceFieldUser user = player.GetForceFieldUser();
+				if (!user.HasField(this))
 				{
 					continue;
 				}

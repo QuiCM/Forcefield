@@ -5,8 +5,10 @@ namespace Forcefield.Forcefields
 {
 	public interface IForcefield
 	{
-		FFType Type { get; }
+		string Name { get; }
+		string Description { get; }
 		float Radius { get; }
+		void Create(ForceFieldUser player, List<string> args);
 		void Update(IEnumerable<TSPlayer> shieldedPlayers);
 	}
 }
