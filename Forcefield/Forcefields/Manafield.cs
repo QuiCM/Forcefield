@@ -34,6 +34,10 @@ namespace Forcefield.Forcefields
 			{
 				player.SetProperty("ManaRecoveryAmount", 10);
 			}
+			if (!player.HasProperty("TimeBetweenRestores"))
+			{
+				player.SetProperty("TimeBetweenRestores", 5);
+			}
 
 			if (args.Count > 0)
 			{
@@ -41,6 +45,14 @@ namespace Forcefield.Forcefields
 				if (Int32.TryParse(args[0], out recover))
 				{
 					player.SetProperty("HealthRecoveryAmount", recover);
+				}
+			}
+			if (args.Count > 1)
+			{
+				int timeBetweenRestores;
+				if (Int32.TryParse(args[1], out timeBetweenRestores))
+				{
+					player.SetProperty("TimeBetweenRestores", timeBetweenRestores);
 				}
 			}
 		}
@@ -64,7 +76,7 @@ namespace Forcefield.Forcefields
 					     p.Team != 0 &&
 					     Vector2.Distance(pos, p.TPlayer.position) < 250);
 
-				if ((DateTime.UtcNow - (DateTime)user["LastManaRecovered"]).TotalSeconds >= 1)
+				if ((DateTime.UtcNow - (DateTime)user["LastManaRecovered"]).TotalSeconds >= (int)user["TimeBetweenRestores"])
 				{
 					foreach (var plr in plrList)
 					{
