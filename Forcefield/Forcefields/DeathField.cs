@@ -41,6 +41,7 @@ namespace Forcefield.Forcefields
 
 				var plrList = TShock.Players.Where(
 					p => p != null &&
+					     p != player &&
 					     p.Active &&
 					     Vector2.Distance(pos, p.TPlayer.position) < 250);
 
