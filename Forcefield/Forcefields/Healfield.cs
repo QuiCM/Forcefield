@@ -73,7 +73,7 @@ namespace Forcefield.Forcefields
 					     p.Active &&
 					     p.Team == player.Team &&
 					     p.Team != 0 &&
-					     Vector2.Distance(pos, p.TPlayer.position) < 250);
+					     Vector2.Distance(pos, p.TPlayer.position) < Radius);
 
 				if ((DateTime.UtcNow - (DateTime)user["LastHealthRecovered"]).TotalSeconds >= (int)user["TimeBetweenHeals"])
 				{

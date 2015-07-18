@@ -17,6 +17,7 @@ namespace Forcefield
 			_forcefields.Add("MANA", new Manafield());
 			_forcefields.Add("KILL", new Killfield());
 			_forcefields.Add("PUSH", new Pushfield());
+			_forcefields.Add("BUFF", new BuffField());
 		}
 
 		public bool TryParse(string name, out IForcefield field)

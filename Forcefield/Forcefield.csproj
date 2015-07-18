@@ -48,6 +48,8 @@
   <ItemGroup>
     <Compile Include="Extensions\TSPlayerExtensions.cs" />
     <Compile Include="FieldContainer.cs" />
+    <Compile Include="Forcefields\BuffField.cs" />
+    <Compile Include="Forcefields\DeathField.cs" />
     <Compile Include="ForceFieldUser.cs" />
     <Compile Include="Forcefields\Healfield.cs" />
     <Compile Include="Forcefields\IForcefield.cs" />
