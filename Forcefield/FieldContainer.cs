@@ -19,6 +19,7 @@ namespace Forcefield
 			_forcefields.Add("PUSH", new Pushfield());
 			_forcefields.Add("BUFF", new BuffField());
 			_forcefields.Add("EVIL", new DeathField());
+			_forcefields.Add("BLACKHOLE", new Blackhole());
 		}
 
 		public bool TryParse(string name, out IForcefield field)

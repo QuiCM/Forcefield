@@ -20,7 +20,7 @@ namespace Forcefield.Forcefields
 
 		public float Radius
 		{
-			get { return 150f; }
+			get { return 250f; }
 		}
 
 		public void Create(ForceFieldUser player, List<string> args)
@@ -43,7 +43,7 @@ namespace Forcefield.Forcefields
 					p => p != null &&
 					     p != player &&
 					     p.Active &&
-					     Vector2.Distance(pos, p.TPlayer.position) < 250);
+					     Vector2.Distance(pos, p.TPlayer.position) < Radius);
 
 				foreach (TSPlayer plr in plrList)
 				{

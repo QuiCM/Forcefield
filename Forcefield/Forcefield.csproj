@@ -48,6 +48,7 @@
   <ItemGroup>
     <Compile Include="Extensions\TSPlayerExtensions.cs" />
     <Compile Include="FieldContainer.cs" />
+    <Compile Include="Forcefields\Blackhole.cs" />
     <Compile Include="Forcefields\BuffField.cs" />
     <Compile Include="Forcefields\DeathField.cs" />
     <Compile Include="ForceFieldUser.cs" />

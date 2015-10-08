@@ -20,7 +20,7 @@ namespace Forcefield.Forcefields
 
 		public float Radius
 		{
-			get { return 150f; }
+			get { return 250f; }
 		}
 
 		public void Create(ForceFieldUser player, List<string> args)

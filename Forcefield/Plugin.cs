@@ -62,8 +62,7 @@ namespace Forcefield
 		}
 
 		/// <summary>
-		/// /forcefield <type> [target]
-		/// type - kill, push
+		/// /forcefield type [target]
 		/// </summary>
 		/// <param name="args"></param>
 		private void Forcefield(CommandArgs args)
