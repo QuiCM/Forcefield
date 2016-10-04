@@ -11,7 +11,7 @@ using Forcefield.Forcefields;
 
 namespace Forcefield
 {
-	[ApiVersion(1, 23)]
+	[ApiVersion(1, 25)]
 	public class Plugin : TerrariaPlugin
 	{
 		private FieldContainer _forcefields;
@@ -50,7 +50,7 @@ namespace Forcefield
 		{
 			Commands.ChatCommands.Add(new Command("forcefield.use", Forcefield, "forcefield", "ff")
 			{
-				HelpText = string.Format("Syntax: {0}ff [type] <target> <-p parameters>", TShock.Config.CommandSpecifier)
+				HelpText = "Syntax: ff [type] <target> <-p parameters>"
 			});
 
 			_forcefields = new FieldContainer();
