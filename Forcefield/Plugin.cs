@@ -11,7 +11,7 @@ using Forcefield.Forcefields;
 
 namespace Forcefield
 {
-	[ApiVersion(2, 0)]
+	[ApiVersion(2, 1)]
 	public class Plugin : TerrariaPlugin
 	{
 		private FieldContainer _forcefields;
